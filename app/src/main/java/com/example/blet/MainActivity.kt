@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -40,6 +41,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.example.blet.ui.theme.BLETTheme
+import com.example.blet.ui.theme.lightBlue
+import com.example.blet.ui.theme.lightestBlue
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,15 +87,24 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Color.Gray
-                        ), color = MaterialTheme.colors.background
                 ) {
                     SwipeRefresh(
                         state = rememberSwipeRefreshState(state.value.dataLoading && scanning),
                         onRefresh = { startScan() },
                     ) {
-                        LazyColumn(modifier = Modifier.padding(16.dp)) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            lightestBlue,
+                                            lightBlue
+                                        )
+                                    )
+                                )
+                                .padding(16.dp)
+                        ) {
                             item {
                                 Text(
                                     state.value.viewHeader,
@@ -103,14 +115,6 @@ class MainActivity : ComponentActivity() {
                                         .padding(top = 48.dp, bottom = 16.dp)
                                 )
                             }
-//                            if (state.value.dataLoading) {
-//                                item {
-//                                    Box(modifier = Modifier.fillMaxWidth()) {
-//                                        CircularProgressIndicator(Modifier.align(Alignment.Center))
-//                                    }
-//
-//                                }
-//                            }
                             items(state.value.listOfBleDevices.size) { index ->
                                 Box(
                                     modifier = Modifier
