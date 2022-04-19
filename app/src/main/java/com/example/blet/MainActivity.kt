@@ -13,9 +13,13 @@ import android.os.Handler
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Divider
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Immutable
@@ -41,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.example.blet.ui.theme.BLETTheme
+import com.example.blet.ui.theme.darkBlue
 import com.example.blet.ui.theme.lightBlue
 import com.example.blet.ui.theme.lightestBlue
 import com.google.accompanist.swiperefresh.SwipeRefresh
@@ -63,7 +68,7 @@ class MainActivity : ComponentActivity() {
 
             super.onScanResult(callbackType, result)
             Log.d("BLE", "Scanning result: $result")
-            val newList = viewState.value.listOfBleDevices + result
+            val newList = viewState.value.listOfBleDevices + BleDeviceWrapper(scanResult = result)
             _viewState.update { currentState ->
                 currentState.copy(
                     viewHeader = "Scanning results:",
@@ -116,7 +121,8 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             items(state.value.listOfBleDevices.size) { index ->
-                                Box(
+                                val item = state.value.listOfBleDevices[index]
+                                Column(
                                     modifier = Modifier
                                         .padding(vertical = 8.dp)
                                         .shadow(5.dp, RoundedCornerShape(10.dp))
@@ -125,10 +131,32 @@ class MainActivity : ComponentActivity() {
                                             Color.White
                                         )
                                         .fillMaxWidth()
-
+                                        .clickable {
+                                            val newList = state.value.listOfBleDevices.map {
+                                                if (it == item) {
+                                                    item.copy(isExpanded = !item.isExpanded)
+                                                } else {
+                                                    it.copy(isExpanded = false)
+                                                }
+                                            }
+                                            _viewState.update { currentState ->
+                                                currentState.copy(
+                                                    listOfBleDevices = newList
+                                                )
+                                            }
+                                        }
+                                        .animateContentSize(
+                                            animationSpec = tween(
+                                                delayMillis = 0,
+                                                easing = LinearOutSlowInEasing
+                                            )
+                                        )
                                 ) {
-                                    val item = state.value.listOfBleDevices[index]
-                                    Row {
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                    ) {
                                         Image(
                                             painter = painterResource(id = R.drawable.ic_bluetooth),
                                             contentDescription = null,
@@ -138,9 +166,23 @@ class MainActivity : ComponentActivity() {
                                                 .align(Alignment.CenterVertically)
                                         )
                                         Text(
-                                            text = "Device id: ${item.device} \nDevice name: ${item.device.name}",
+                                            text = "Device id: ${item.scanResult.device} \nDevice name: ${item.scanResult.device.name}",
                                             modifier = Modifier.align(Alignment.CenterVertically)
                                         )
+                                    }
+                                    if (item.isExpanded) {
+                                        Divider(color = Color.LightGray, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = "${item.scanResult}",
+                                                modifier = Modifier
+                                                    .padding(16.dp)
+                                                    .fillMaxWidth()
+                                            )
+                                        }
                                     }
                                 }
 
@@ -155,7 +197,7 @@ class MainActivity : ComponentActivity() {
         startScan()
     }
 
-    fun startScan() {
+    private fun startScan() {
         if (!hasPermissions(this, permissions)) {
             Log.d("BLE", "No permission")
             requestPermissions(permissions.toTypedArray(), REQUEST_CODE)
@@ -240,6 +282,13 @@ class MainActivity : ComponentActivity() {
 data class BleViewState(
     val viewHeader: String = "Bluetooth Devices Scanner",
     val dataLoading: Boolean = false,
-    val listOfBleDevices: List<ScanResult> = listOf()
+    val listOfBleDevices: List<BleDeviceWrapper> = listOf()
 )
+
+data class BleDeviceWrapper(
+    val scanResult: ScanResult,
+    val isExpanded: Boolean = false
+)
+
+
 
