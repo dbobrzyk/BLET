@@ -2,6 +2,8 @@ package com.example.blet
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -171,17 +173,53 @@ class MainActivity : ComponentActivity() {
                                         )
                                     }
                                     if (item.isExpanded) {
-                                        Divider(color = Color.LightGray, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                                        Row(
+                                        Divider(
+                                            color = Color.LightGray,
+                                            thickness = 1.dp,
+                                            modifier = Modifier.padding(horizontal = 16.dp)
+                                        )
+                                        Column(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .padding(16.dp)
                                         ) {
+                                            Text(text = "Signal strenght: ${item.scanResult.rssi} dBm")
+                                            Text(text = "Connectable: ${item.scanResult.isConnectable}")
                                             Text(
-                                                text = "${item.scanResult}",
+                                                color = Color.White,
+                                                text = "Connect",
                                                 modifier = Modifier
-                                                    .padding(16.dp)
-                                                    .fillMaxWidth()
+                                                    .padding(top = 8.dp)
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(darkBlue)
+                                                    .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
+                                                    .align(Alignment.CenterHorizontally)
+                                                    .clickable {
+                                                        item.scanResult.device.connectGatt(
+                                                            this@MainActivity,
+                                                            true,
+                                                            object : BluetoothGattCallback() {
+
+                                                                override fun onConnectionStateChange(
+                                                                    gatt: BluetoothGatt?,
+                                                                    status: Int,
+                                                                    newState: Int
+                                                                ) {
+                                                                    super.onConnectionStateChange(
+                                                                        gatt,
+                                                                        status,
+                                                                        newState
+                                                                    )
+                                                                    Log.i(
+                                                                        "BLE",
+                                                                        "State changed // from $status to $newState \n gatt: $gatt"
+                                                                    )
+                                                                }
+                                                            }
+                                                        )
+                                                    }
                                             )
+
                                         }
                                     }
                                 }
