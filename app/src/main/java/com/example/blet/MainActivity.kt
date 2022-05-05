@@ -21,6 +21,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import com.example.blet.ble.MyBleManager
 import com.example.blet.ui.theme.BLETTheme
 import com.example.blet.ui.theme.darkBlue
 import com.example.blet.ui.theme.lightBlue
@@ -66,23 +68,29 @@ class MainActivity : ComponentActivity() {
 
     // Device scan callback.
     private val leScanCallback: ScanCallback = object : ScanCallback() {
+        @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
 
             super.onScanResult(callbackType, result)
             Log.d("BLE", "Scanning result: $result")
-            val newList = viewState.value.listOfBleDevices + BleDeviceWrapper(scanResult = result)
-            _viewState.update { currentState ->
-                currentState.copy(
-                    viewHeader = "Scanning results:",
-                    listOfBleDevices = newList,
-                    dataLoading = false
-                )
+
+            if (!viewState.value.listOfBleDevices.map { it.scanResult.device.address }
+                    .contains(result.device.address)) {
+                val newList =
+                    (viewState.value.listOfBleDevices + BleDeviceWrapper(scanResult = result)).sortedByDescending { it.range }
+                _viewState.update { currentState ->
+                    currentState.copy(
+                        viewHeader = "Scanning results:",
+                        listOfBleDevices = newList,
+                        dataLoading = false
+                    )
+                }
             }
         }
     }
     private var scanning = false
     private val handler = Handler()
-    private val SCAN_PERIOD: Long = 10000
+    private val SCAN_PERIOD: Long = 30000
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,13 +132,17 @@ class MainActivity : ComponentActivity() {
                             }
                             items(state.value.listOfBleDevices.size) { index ->
                                 val item = state.value.listOfBleDevices[index]
+                                val isMyBeacon = item.scanResult.device.address == "49:11:B5:A8:7F:D1"
                                 Column(
                                     modifier = Modifier
                                         .padding(vertical = 8.dp)
                                         .shadow(5.dp, RoundedCornerShape(10.dp))
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(
-                                            Color.White
+                                            if (isMyBeacon)
+                                                lightBlue
+                                            else
+                                                Color.White
                                         )
                                         .fillMaxWidth()
                                         .clickable {
@@ -156,8 +168,10 @@ class MainActivity : ComponentActivity() {
                                 ) {
 
                                     Row(
+                                        horizontalArrangement = Arrangement.SpaceBetween,
                                         modifier = Modifier
                                             .fillMaxWidth()
+
                                     ) {
                                         Image(
                                             painter = painterResource(id = R.drawable.ic_bluetooth),
@@ -167,9 +181,21 @@ class MainActivity : ComponentActivity() {
                                                 .size(48.dp)
                                                 .align(Alignment.CenterVertically)
                                         )
+                                        val name =
+                                            item.scanResult.device.name ?: item.scanResult.scanRecord?.deviceName ?: "-"
                                         Text(
-                                            text = "Device id: ${item.scanResult.device} \nDevice name: ${item.scanResult.device.name}",
-                                            modifier = Modifier.align(Alignment.CenterVertically)
+                                            text = "Device uuid: ${item.scanResult.device.address} \nDevice name: $name",
+                                            modifier = Modifier
+                                                .align(Alignment.CenterVertically)
+                                                .weight(1f, false)
+                                        )
+                                        Image(
+                                            painter = painterResource(id = item.rangeDrawable),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .padding(8.dp)
+                                                .size(16.dp)
+                                                .align(Alignment.CenterVertically)
                                         )
                                     }
                                     if (item.isExpanded) {
@@ -195,6 +221,7 @@ class MainActivity : ComponentActivity() {
                                                     .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
                                                     .align(Alignment.CenterHorizontally)
                                                     .clickable {
+                                                        connectToDevice(item)
                                                         item.scanResult.device.connectGatt(
                                                             this@MainActivity,
                                                             true,
@@ -235,6 +262,34 @@ class MainActivity : ComponentActivity() {
         startScan()
     }
 
+    private fun connectToDevice(item: BleDeviceWrapper) {
+        val bleManager = MyBleManager(this@MainActivity)
+        val bluetoothDevice = item.scanResult.device
+        bleManager.connect(bluetoothDevice)
+            .retry(3 /* times, with */, 100 /* ms interval */)
+            .timeout(15_000 /* ms */)
+            .useAutoConnect(true)
+            // A connection timeout can be also set. This is additional to the Android's connection timeout which is 30 seconds.
+            .timeout(15_000 /* ms */)
+            // Each request has number of callbacks called in different situations:
+            .before { device ->
+                Log.d("BLE connect", "Before")
+            }
+            .done { device ->
+                Log.d("BLE connect", "Done, device: $device")
+            }
+            .fail { device, code ->
+                Log.d("BLE connect", "fail $code")
+            }
+            .then { device ->
+                Log.d("BLE connect", "then")
+            }
+            // Each request must be enqueued.
+            // Kotlin projects can use suspend() or suspendForResult() instead.
+            // Java projects can also use await() which is blocking.
+            .enqueue()
+    }
+
     private fun startScan() {
         if (!hasPermissions(this, permissions)) {
             Log.d("BLE", "No permission")
@@ -260,6 +315,7 @@ class MainActivity : ComponentActivity() {
         }
         val bluetoothAdapter = (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
         val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
+
         if (!scanning && hasPermissions(
                 this,
                 permissions
@@ -326,7 +382,37 @@ data class BleViewState(
 data class BleDeviceWrapper(
     val scanResult: ScanResult,
     val isExpanded: Boolean = false
-)
+) {
+    val range: Int = when (scanResult.rssi) {
+        in -60..0 -> {
+            3
+        }
+        in -80..-60 -> {
+            2
+        }
+        in -100..-80 -> {
+            1
+        }
+        else -> {
+            0
+        }
+    }
+
+    val rangeDrawable = when (range) {
+        3 -> {
+            R.drawable.ic_range_3
+        }
+        2 -> {
+            R.drawable.ic_range_2
+        }
+        1 -> {
+            R.drawable.ic_range_1
+        }
+        else -> {
+            R.drawable.ic_range_0
+        }
+    }
+}
 
 
 

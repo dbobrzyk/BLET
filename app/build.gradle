@@ -61,4 +61,11 @@ dependencies {
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.0'
     implementation "com.google.accompanist:accompanist-swiperefresh:0.19.0"
+
+    //Library from LilBit
+    implementation 'no.nordicsemi.android:ble:2.4.0'
+    implementation 'no.nordicsemi.android:ble-ktx:2.4.0'
+    implementation 'no.nordicsemi.android:ble-common:2.4.0'
+    implementation 'no.nordicsemi.android:ble-livedata:2.4.0'
+
 }
