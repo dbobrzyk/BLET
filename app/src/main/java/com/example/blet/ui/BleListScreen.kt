@@ -54,7 +54,8 @@ fun BleListScreen(
     scanning: () -> Boolean,
     startScan: () -> Unit,
     changeViewState: (BleViewState) -> Unit,
-    connectToDevice: (BleDeviceWrapper) -> Unit
+    connectToDevice: (BleDeviceWrapper) -> Unit,
+    addMarker: (BleDeviceWrapper) -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -84,7 +85,7 @@ fun BleListScreen(
                                 Text("Localization \nLatitude: ${state.value.location?.latitude}\nLongitude: ${state.value.location?.longitude}")
                             }
                             Column(Modifier.weight(1f)) {
-                                Text("Map", textAlign = TextAlign.Center, modifier = Modifier
+                                Text("Map", color = Color.White, textAlign = TextAlign.Center, modifier = Modifier
                                     .clickable {
                                         changeViewState(
                                             state.value.copy(
@@ -93,7 +94,7 @@ fun BleListScreen(
                                         )
                                     }
                                     .align(Alignment.CenterHorizontally)
-                                    .background(Color.Red)
+                                    .background(darkBlue)
                                     .fillMaxWidth()
                                     .padding(16.dp))
                             }
@@ -191,7 +192,7 @@ fun BleListScreen(
                                 Text(text = "Connectable: ${item.scanResult.isConnectable}")
                                 Text(
                                     color = Color.White,
-                                    text = "Connect",
+                                    text = "Add marker",
                                     modifier = Modifier
                                         .padding(top = 8.dp)
                                         .clip(RoundedCornerShape(4.dp))
@@ -199,38 +200,13 @@ fun BleListScreen(
                                         .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
                                         .align(Alignment.CenterHorizontally)
                                         .clickable {
-                                            connectToDevice(item)
-                                            item.scanResult.device.connectGatt(
-                                                context,
-                                                true,
-                                                object : BluetoothGattCallback() {
-
-                                                    override fun onConnectionStateChange(
-                                                        gatt: BluetoothGatt?,
-                                                        status: Int,
-                                                        newState: Int
-                                                    ) {
-                                                        super.onConnectionStateChange(
-                                                            gatt,
-                                                            status,
-                                                            newState
-                                                        )
-                                                        Log.i(
-                                                            "BLE",
-                                                            "State changed // from $status to $newState \n gatt: $gatt"
-                                                        )
-                                                    }
-                                                }
-                                            )
+                                            addMarker(item)
                                         }
                                 )
-
                             }
                         }
                     }
-
                 }
-
             }
         }
     }

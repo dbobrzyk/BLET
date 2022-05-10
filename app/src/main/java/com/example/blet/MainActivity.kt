@@ -14,6 +14,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Immutable
@@ -23,6 +24,7 @@ import com.example.blet.ble.MyBleManager
 import com.example.blet.ui.BleListScreen
 import com.example.blet.ui.MapScreen
 import com.example.blet.ui.theme.BLETTheme
+import com.example.blet.util.DistanceUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,7 +72,7 @@ class MainActivity : ComponentActivity() {
             BLETTheme {
                 val state = viewState.collectAsState()
                 // A surface container using the 'background' color from the theme
-                if(state.value.view == ViewType.BLE_LIST){
+                if (state.value.view == ViewType.BLE_LIST) {
                     BleListScreen(
                         context = this@MainActivity,
                         state = state,
@@ -81,10 +83,20 @@ class MainActivity : ComponentActivity() {
                         },
                         connectToDevice = { item ->
                             connectToDevice(item)
+                        },
+                        addMarker = { item ->
+                            _viewState.value.location?.let { loc ->
+                                val distance =
+                                    DistanceUtil.getDistanceFromDevice(item.scanResult.rssi, item.scanResult.txPower)
+                                val markerList = _viewState.value.listOfMarkers + Marker(loc, distance)
+                                _viewState.update { it.copy(listOfMarkers = markerList) }
+                            } ?: run {
+                                Toast.makeText(this, "No location", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     )
-                }else{
-                    MapScreen( state = state,  changeViewState = { state ->
+                } else {
+                    MapScreen(state = state, changeViewState = { state ->
                         _viewState.update { state }
                     })
                 }
@@ -183,16 +195,17 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
+
     private fun getGpsLocation() {
 
-        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        val locationListener: LocationListener = MyLocationListener({ location ->
+        Log.d("LOCALIAZABLE", "GET GPS")
+        val locationListener: LocationListener = MyLocationListener { location ->
             _viewState.update { currentState ->
                 currentState.copy(
                     location = location
                 )
             }
-        })
+        }
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -201,6 +214,7 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+            Log.d("LOCALIAZABLE", "NO PERMISSION")
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -210,15 +224,42 @@ class MainActivity : ComponentActivity() {
             // for ActivityCompat#requestPermissions for more details.
             return
         }
+        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+        val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+        location?.let {
+            _viewState.update { currentState ->
+                currentState.copy(
+                    location = it
+                )
+            }
+        }
+        Log.d("LOCALIAZABLE", "Requestuje location updates jkc")
         locationManager.requestLocationUpdates(
-            LocationManager.GPS_PROVIDER, 1000, 10f, locationListener
+            LocationManager.GPS_PROVIDER, 0, 0f, locationListener
         )
     }
 
     private class MyLocationListener(private val setLocation: (Location) -> Unit) : LocationListener {
+
+        override fun onProviderEnabled(provider: String) {
+            Log.d("LOCALIAZACKJAAA", "provider enabled")
+            super.onProviderEnabled(provider)
+        }
+
+        override fun onProviderDisabled(provider: String) {
+            Log.d("LOCALIAZACKJAAA", "provider disabled")
+            super.onProviderDisabled(provider)
+        }
+
         override fun onLocationChanged(loc: Location) {
             Log.d("LOCALIAZACKJAAA", loc.toString())
             setLocation(loc)
+        }
+
+        override fun onLocationChanged(locations: MutableList<Location>) {
+            Log.d("LOCALIAZACJEEEEE!!!", locations.toString())
+            setLocation(locations.first())
+            super.onLocationChanged(locations)
         }
     }
 
@@ -250,7 +291,13 @@ data class BleViewState(
     val dataLoading: Boolean = false,
     val listOfBleDevices: List<BleDeviceWrapper> = listOf(),
     val location: Location? = null,
-    val view: ViewType = com.example.blet.ViewType.BLE_LIST
+    val view: ViewType = com.example.blet.ViewType.BLE_LIST,
+    val listOfMarkers: List<Marker> = listOf()
+)
+
+data class Marker(
+    val location: Location,
+    val distance: Double
 )
 
 enum class ViewType {
