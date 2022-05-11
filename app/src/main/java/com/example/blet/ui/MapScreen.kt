@@ -32,15 +32,9 @@ import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
 fun MapScreen(
-    state: State<BleViewState>,
-    changeViewState: (BleViewState) -> Unit,
+    state: State<BleViewState>
 ) {
-
-
-    Surface(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    Surface {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -52,22 +46,8 @@ fun MapScreen(
                         )
                     )
                 )
-                .padding(16.dp)
+                .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 80.dp)
         ) {
-            Text("Ble devices List", color = Color.White, textAlign = TextAlign.Center, modifier = Modifier
-                .padding(8.dp)
-                .align(Alignment.CenterHorizontally)
-                .background(darkBlue)
-                .fillMaxWidth()
-                .padding(16.dp)
-                .clickable {
-                    changeViewState(
-                        state.value.copy(
-                            view = ViewType.BLE_LIST
-                        )
-                    )
-                })
-
             val singapore = LatLng(1.35, 103.87)
             val point = LatLng(
                 state.value.location?.latitude ?: singapore.latitude,

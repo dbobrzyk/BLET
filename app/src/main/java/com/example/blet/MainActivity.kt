@@ -17,13 +17,30 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.example.blet.ble.MyBleManager
 import com.example.blet.ui.BleListScreen
+import com.example.blet.ui.BottomBar
 import com.example.blet.ui.MapScreen
+import com.example.blet.ui.SearchDeviceScreen
 import com.example.blet.ui.theme.BLETTheme
+import com.example.blet.ui.theme.lightBlue
+import com.example.blet.ui.theme.lightestBlue
 import com.example.blet.util.DistanceUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +62,14 @@ class MainActivity : ComponentActivity() {
 
             super.onScanResult(callbackType, result)
             Log.d("BLE", "Scanning result: $result")
+
+            if(result.device.name?.contains("Mi Smart") == true){
+                _viewState.update { currentState ->
+                    currentState.copy(
+                        chosenDevice = result
+                    )
+                }
+            }
 
             if (!viewState.value.listOfBleDevices.map { it.scanResult.device.address }
                     .contains(result.device.address)) {
@@ -70,36 +95,52 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             BLETTheme {
+                var pageSelected by remember {
+                    mutableStateOf(2)
+                }
                 val state = viewState.collectAsState()
-                // A surface container using the 'background' color from the theme
-                if (state.value.view == ViewType.BLE_LIST) {
-                    BleListScreen(
-                        context = this@MainActivity,
-                        state = state,
-                        scanning = { scanning },
-                        startScan = { startScan() },
-                        changeViewState = { state ->
-                            _viewState.update { state }
-                        },
-                        connectToDevice = { item ->
-                            connectToDevice(item)
-                        },
-                        addMarker = { item ->
-                            _viewState.value.location?.let { loc ->
-                                val distance =
-                                    DistanceUtil.getDistanceFromDevice(item.scanResult.rssi, item.scanResult.txPower)
-                                val markerList = _viewState.value.listOfMarkers + Marker(loc, distance)
-                                _viewState.update { it.copy(listOfMarkers = markerList) }
-                            } ?: run {
-                                Toast.makeText(this, "No location", Toast.LENGTH_SHORT).show()
+                Scaffold(
+                    bottomBar = { BottomBar(pageSelected) { page -> pageSelected = page } },
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    content = { innerPadding ->
+                        when (pageSelected) {
+                            0 -> {
+                                BleListScreen(
+                                    context = this@MainActivity,
+                                    state = state,
+                                    scanning = { scanning },
+                                    startScan = { startScan() },
+                                    changeViewState = { state ->
+                                        _viewState.update { state }
+                                    },
+                                    connectToDevice = { item ->
+                                        connectToDevice(item)
+                                    },
+                                    addMarker = { item ->
+                                        _viewState.value.location?.let { loc ->
+                                            val distance =
+                                                DistanceUtil.getDistanceFromDevice(
+                                                    item.scanResult.rssi,
+                                                    item.scanResult.txPower
+                                                )
+                                            val markerList = _viewState.value.listOfMarkers + Marker(loc, distance)
+                                            _viewState.update { it.copy(listOfMarkers = markerList) }
+                                        } ?: run {
+                                            Toast.makeText(this@MainActivity, "No location", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
+                            }
+                            1 -> {
+                                MapScreen(state = state)
+                            }
+                            2 -> {
+                                SearchDeviceScreen(state = state, innerPadding)
                             }
                         }
-                    )
-                } else {
-                    MapScreen(state = state, changeViewState = { state ->
-                        _viewState.update { state }
-                    })
-                }
+                    }
+                )
             }
         }
 
@@ -292,7 +333,8 @@ data class BleViewState(
     val listOfBleDevices: List<BleDeviceWrapper> = listOf(),
     val location: Location? = null,
     val view: ViewType = com.example.blet.ViewType.BLE_LIST,
-    val listOfMarkers: List<Marker> = listOf()
+    val listOfMarkers: List<Marker> = listOf(),
+    val chosenDevice: ScanResult? = null
 )
 
 data class Marker(

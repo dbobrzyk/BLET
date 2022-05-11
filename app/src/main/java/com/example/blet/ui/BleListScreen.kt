@@ -1,10 +1,7 @@
 package com.example.blet.ui
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCallback
 import android.content.Context
-import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -39,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import com.example.blet.BleDeviceWrapper
 import com.example.blet.BleViewState
 import com.example.blet.R
-import com.example.blet.ViewType
 import com.example.blet.ui.theme.darkBlue
 import com.example.blet.ui.theme.lightBlue
 import com.example.blet.ui.theme.lightestBlue
@@ -80,25 +76,9 @@ fun BleListScreen(
             ) {
                 item {
                     Column {
-                        Row {
-                            Column(Modifier.weight(1f)) {
-                                Text("Localization \nLatitude: ${state.value.location?.latitude}\nLongitude: ${state.value.location?.longitude}")
-                            }
-                            Column(Modifier.weight(1f)) {
-                                Text("Map", color = Color.White, textAlign = TextAlign.Center, modifier = Modifier
-                                    .clickable {
-                                        changeViewState(
-                                            state.value.copy(
-                                                view = ViewType.MAP
-                                            )
-                                        )
-                                    }
-                                    .align(Alignment.CenterHorizontally)
-                                    .background(darkBlue)
-                                    .fillMaxWidth()
-                                    .padding(16.dp))
-                            }
-                        }
+
+                        Text("Localization \nLatitude: ${state.value.location?.latitude}\nLongitude: ${state.value.location?.longitude}")
+
                         Text(
                             state.value.viewHeader,
                             style = TextStyle(fontWeight = FontWeight.Bold),
@@ -190,19 +170,32 @@ fun BleListScreen(
                                 Text(text = "Signal strenght: ${item.scanResult.rssi} dBm [rssi]")
                                 Text(text = "Signal power: ${item.scanResult.txPower} dBm [txpower]")
                                 Text(text = "Connectable: ${item.scanResult.isConnectable}")
-                                Text(
-                                    color = Color.White,
-                                    text = "Add marker",
-                                    modifier = Modifier
-                                        .padding(top = 8.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(darkBlue)
-                                        .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
-                                        .align(Alignment.CenterHorizontally)
-                                        .clickable {
-                                            addMarker(item)
-                                        }
-                                )
+                                Row{
+                                    Text(
+                                        color = Color.White,
+                                        text = "Add marker",
+                                        modifier = Modifier
+                                            .padding(top = 8.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(darkBlue)
+                                            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
+                                            .clickable {
+                                                addMarker(item)
+                                            }
+                                    )
+                                    Text(
+                                        color = Color.White,
+                                        text = "Connect",
+                                        modifier = Modifier
+                                            .padding(top = 8.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(darkBlue)
+                                            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
+                                            .clickable {
+                                                connectToDevice(item)
+                                            }
+                                    )
+                                }
                             }
                         }
                     }
