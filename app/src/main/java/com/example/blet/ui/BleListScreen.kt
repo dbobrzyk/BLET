@@ -51,7 +51,8 @@ fun BleListScreen(
     startScan: () -> Unit,
     changeViewState: (BleViewState) -> Unit,
     connectToDevice: (BleDeviceWrapper) -> Unit,
-    addMarker: (BleDeviceWrapper) -> Unit
+    addMarker: (BleDeviceWrapper) -> Unit,
+    searchForDevice: (BleDeviceWrapper) -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -175,10 +176,10 @@ fun BleListScreen(
                                         color = Color.White,
                                         text = "Add marker",
                                         modifier = Modifier
-                                            .padding(top = 8.dp)
+                                            .padding(8.dp)
                                             .clip(RoundedCornerShape(4.dp))
                                             .background(darkBlue)
-                                            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
+                                            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
                                             .clickable {
                                                 addMarker(item)
                                             }
@@ -187,13 +188,26 @@ fun BleListScreen(
                                         color = Color.White,
                                         text = "Connect",
                                         modifier = Modifier
-                                            .padding(top = 8.dp)
+                                            .padding(8.dp)
                                             .clip(RoundedCornerShape(4.dp))
                                             .background(darkBlue)
-                                            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
+                                            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
                                             .clickable {
                                                 connectToDevice(item)
                                             }
+                                    )
+                                    Text(
+                                        color = Color.White,
+                                        text = "Search",
+                                        modifier = Modifier
+                                            .padding(8.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(darkBlue)
+                                            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                                            .clickable {
+                                                searchForDevice(item)
+                                            }
+
                                     )
                                 }
                             }

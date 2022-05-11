@@ -2,9 +2,12 @@ package com.example.blet
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -12,16 +15,13 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Handler
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
@@ -30,8 +30,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.example.blet.ble.MyBleManager
 import com.example.blet.ui.BleListScreen
@@ -39,8 +37,6 @@ import com.example.blet.ui.BottomBar
 import com.example.blet.ui.MapScreen
 import com.example.blet.ui.SearchDeviceScreen
 import com.example.blet.ui.theme.BLETTheme
-import com.example.blet.ui.theme.lightBlue
-import com.example.blet.ui.theme.lightestBlue
 import com.example.blet.util.DistanceUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,7 +59,7 @@ class MainActivity : ComponentActivity() {
             super.onScanResult(callbackType, result)
             Log.d("BLE", "Scanning result: $result")
 
-            if(result.device.name?.contains("Mi Smart") == true){
+            if (result.device.name?.contains("Mi Smart") == true) {
                 _viewState.update { currentState ->
                     currentState.copy(
                         chosenDevice = result
@@ -88,7 +84,7 @@ class MainActivity : ComponentActivity() {
 
     private var scanning = false
     private val handler = Handler()
-    private val SCAN_PERIOD: Long = 30000
+    private val SCAN_PERIOD: Long = 3000
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,7 +92,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             BLETTheme {
                 var pageSelected by remember {
-                    mutableStateOf(2)
+                    mutableStateOf(0)
                 }
                 val state = viewState.collectAsState()
                 Scaffold(
@@ -129,6 +125,10 @@ class MainActivity : ComponentActivity() {
                                         } ?: run {
                                             Toast.makeText(this@MainActivity, "No location", Toast.LENGTH_SHORT).show()
                                         }
+                                    },
+                                    searchForDevice = { item ->
+                                        pageSelected = 2
+                                        searchForDevice(item)
                                     }
                                 )
                             }
@@ -146,6 +146,18 @@ class MainActivity : ComponentActivity() {
 
         startScan()
         getGpsLocation()
+    }
+
+    private fun searchForDevice(item: BleDeviceWrapper) {
+        object : CountDownTimer(30000, 550) {
+
+            override fun onTick(millisUntilFinished: Long) {
+                scanChosenDevice(item.scanResult)
+            }
+
+            override fun onFinish() {
+            }
+        }.start()
     }
 
     private fun connectToDevice(item: BleDeviceWrapper) {
@@ -183,7 +195,7 @@ class MainActivity : ComponentActivity() {
         } else {
             try {
                 Log.d("BLE", "Prepare for scan")
-                scanLeDevice()
+                scanLeDevices()
             } catch (e: Exception) {
                 Log.d("BLE", "Scanning failed: \n\n $e")
             }
@@ -191,7 +203,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun scanLeDevice() {
+    private fun scanLeDevices() {
         _viewState.update { currentState ->
             currentState.copy(
                 viewHeader = "Scanning...",
@@ -202,11 +214,7 @@ class MainActivity : ComponentActivity() {
         val bluetoothAdapter = (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
         val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
 
-        if (!scanning && hasPermissions(
-                this,
-                permissions
-            ) && bluetoothAdapter?.isEnabled == true
-        ) { // Stops scanning after a pre-defined scan period.
+        if (canScan(bluetoothAdapter)) { // Stops scanning after a pre-defined scan period.
             Log.d("BLE", "Permissions OK - Start scanning")
             handler.postDelayed({
                 scanning = false
@@ -225,6 +233,57 @@ class MainActivity : ComponentActivity() {
             scanning = false
             bluetoothLeScanner?.stopScan(leScanCallback)
         }
+    }
+
+    private val chosenScanCallback: ScanCallback = object : ScanCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            super.onScanResult(callbackType, result)
+            if (result.device.name?.contains("Mi Smart") == true) {
+                _viewState.update { currentState ->
+                    currentState.copy(
+                        chosenDevice = result
+                    )
+                }
+            }
+        }
+    }
+
+    var chosenScanning = false
+
+    @SuppressLint("MissingPermission")
+    private fun scanChosenDevice(scanResult: ScanResult) {
+
+        val bluetoothAdapter = (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
+        val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
+        val scanFilter = ScanFilter.Builder()
+            .setDeviceAddress(scanResult.device.address)
+            .build()
+
+        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.CALLBACK_TYPE_FIRST_MATCH).build();
+
+        if (canScan(bluetoothAdapter)) { // Stops scanning after a pre-defined scan period.
+            Log.d("BLE", "Permissions OK - Start scanning")
+            handler.postDelayed({
+                chosenScanning = false
+                bluetoothLeScanner?.stopScan(leScanCallback)
+            }, 1000)
+            chosenScanning = true
+            bluetoothLeScanner?.startScan(
+                listOf(scanFilter),
+                scanSettings,
+                chosenScanCallback
+            )
+        } else {
+            Log.d("BLE", "Wont start scanning (chosen)")
+        }
+    }
+
+    private fun canScan(bluetoothAdapter: BluetoothAdapter?): Boolean {
+        return !scanning && hasPermissions(
+            this,
+            permissions
+        ) && bluetoothAdapter?.isEnabled == true
     }
 
     private fun hasPermissions(context: Context, permissions: List<String>): Boolean {
