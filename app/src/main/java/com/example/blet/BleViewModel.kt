@@ -36,35 +36,6 @@ class BleViewModel @Inject constructor() : ViewModel() {
         _viewState.update { state }
     }
 
-    @SuppressLint("MissingPermission")
-    private fun scanChosenDevice(scanResult: ScanResult, bluetoothAdapter: BluetoothAdapter?) {
-
-
-        val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
-        val scanFilter = ScanFilter.Builder()
-            .setDeviceAddress(scanResult.device.address)
-            .build()
-
-        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.CALLBACK_TYPE_FIRST_MATCH).build();
-
-        if (canScan(bluetoothAdapter)) { // Stops scanning after a pre-defined scan period.
-            Log.d("BLE", "Permissions OK - Start scanning")
-            handler.postDelayed({
-                chosenScanning = false
-                bluetoothLeScanner?.stopScan(leScanCallback)
-            }, 1000)
-            chosenScanning = true
-            bluetoothLeScanner?.startScan(
-                listOf(scanFilter),
-                scanSettings,
-                chosenScanCallback
-            )
-        } else {
-            Log.d("BLE", "Wont start scanning (chosen)")
-        }
-    }
-
-
     fun searchForDevice(item: BleDeviceWrapper, bluetoothAdapter: BluetoothAdapter?) {
         object : CountDownTimer(30000, 250) {
 
@@ -72,8 +43,7 @@ class BleViewModel @Inject constructor() : ViewModel() {
                 scanChosenDevice(item.scanResult, bluetoothAdapter)
             }
 
-            override fun onFinish() {
-            }
+            override fun onFinish() {}
         }.start()
     }
 
@@ -89,7 +59,6 @@ class BleViewModel @Inject constructor() : ViewModel() {
         val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
 
         if (canScan(bluetoothAdapter)) { // Stops scanning after a pre-defined scan period.
-            Log.d("BLE", "Permissions OK - Start scanning")
             handler.postDelayed({
                 scanning = false
                 bluetoothLeScanner?.stopScan(leScanCallback)
@@ -109,12 +78,7 @@ class BleViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    private fun canScan(bluetoothAdapter: BluetoothAdapter?): Boolean {
-        return !scanning && bluetoothAdapter?.isEnabled == true
-    }
-
     fun connectToDevice(item: BleDeviceWrapper, bleManager: MyBleManager) {
-
         //TODO in progress
         val bluetoothDevice = item.scanResult.device
         bleManager.connect(bluetoothDevice)
@@ -124,22 +88,61 @@ class BleViewModel @Inject constructor() : ViewModel() {
             // A connection timeout can be also set. This is additional to the Android's connection timeout which is 30 seconds.
             .timeout(15_000 /* ms */)
             // Each request has number of callbacks called in different situations:
-            .before { device ->
-                Log.d("BLE connect", "Before")
-            }
-            .done { device ->
-                Log.d("BLE connect", "Done, device: $device")
-            }
-            .fail { device, code ->
-                Log.d("BLE connect", "fail $code")
-            }
-            .then { device ->
-                Log.d("BLE connect", "then")
-            }
             // Each request must be enqueued.
             // Kotlin projects can use suspend() or suspendForResult() instead.
             // Java projects can also use await() which is blocking.
             .enqueue()
+    }
+
+    @SuppressLint("MissingPermission")
+    fun getGpsLocation(locationManager: LocationManager) {
+        val locationListener: LocationListener = MyLocationListener { location ->
+            _viewState.update { currentState ->
+                currentState.copy(
+                    location = location
+                )
+            }
+        }
+
+        val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+        location?.let {
+            _viewState.update { currentState ->
+                currentState.copy(
+                    location = it
+                )
+            }
+        }
+
+        locationManager.requestLocationUpdates(
+            LocationManager.GPS_PROVIDER, 0, 0f, locationListener
+        )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun scanChosenDevice(scanResult: ScanResult, bluetoothAdapter: BluetoothAdapter?) {
+        val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
+        val scanFilter = ScanFilter.Builder()
+            .setDeviceAddress(scanResult.device.address)
+            .build()
+
+        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.CALLBACK_TYPE_FIRST_MATCH).build();
+
+        if (canScan(bluetoothAdapter)) { // Stops scanning after a pre-defined scan period.
+            handler.postDelayed({
+                chosenScanning = false
+                bluetoothLeScanner?.stopScan(leScanCallback)
+            }, 1000)
+            chosenScanning = true
+            bluetoothLeScanner?.startScan(
+                listOf(scanFilter),
+                scanSettings,
+                chosenScanCallback
+            )
+        }
+    }
+
+    private fun canScan(bluetoothAdapter: BluetoothAdapter?): Boolean {
+        return !scanning && bluetoothAdapter?.isEnabled == true
     }
 
     private val chosenScanCallback: ScanCallback = object : ScanCallback() {
@@ -159,54 +162,14 @@ class BleViewModel @Inject constructor() : ViewModel() {
     var chosenScanning = false
 
     private class MyLocationListener(private val setLocation: (Location) -> Unit) : LocationListener {
-
-        override fun onProviderEnabled(provider: String) {
-            Log.d("LOCALIAZACKJAAA", "provider enabled")
-            super.onProviderEnabled(provider)
-        }
-
-        override fun onProviderDisabled(provider: String) {
-            Log.d("LOCALIAZACKJAAA", "provider disabled")
-            super.onProviderDisabled(provider)
-        }
-
         override fun onLocationChanged(loc: Location) {
-            Log.d("LOCALIAZACKJAAA", loc.toString())
             setLocation(loc)
         }
 
         override fun onLocationChanged(locations: MutableList<Location>) {
-            Log.d("LOCALIAZACJEEEEE!!!", locations.toString())
             setLocation(locations.first())
             super.onLocationChanged(locations)
         }
-    }
-
-
-    @SuppressLint("MissingPermission")
-    fun getGpsLocation(locationManager: LocationManager) {
-
-        Log.d("LOCALIAZABLE", "GET GPS")
-        val locationListener: LocationListener = MyLocationListener { location ->
-            _viewState.update { currentState ->
-                currentState.copy(
-                    location = location
-                )
-            }
-        }
-
-        val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-        location?.let {
-            _viewState.update { currentState ->
-                currentState.copy(
-                    location = it
-                )
-            }
-        }
-        Log.d("LOCALIAZABLE", "Requestuje location updates jkc")
-        locationManager.requestLocationUpdates(
-            LocationManager.GPS_PROVIDER, 0, 0f, locationListener
-        )
     }
 
     // Device scan callback.
@@ -215,7 +178,6 @@ class BleViewModel @Inject constructor() : ViewModel() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
 
             super.onScanResult(callbackType, result)
-            Log.d("BLE", "Scanning result: $result")
 
             if (result.device.name?.contains("Mi Smart") == true) {
                 _viewState.update { currentState ->

@@ -120,14 +120,12 @@ class MainActivity : ComponentActivity() {
 
     private fun startScan() {
         if (!hasPermissions(this, permissions)) {
-            Log.d("BLE", "No permission")
             requestPermissions(permissions.toTypedArray(), REQUEST_CODE)
         } else {
             try {
-                Log.d("BLE", "Prepare for scan")
                 viewModel.scanLeDevices(bluetoothAdapter)
             } catch (e: Exception) {
-                Log.d("BLE", "Scanning failed: \n\n $e")
+                //TODO
             }
         }
     }
