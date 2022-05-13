@@ -129,7 +129,8 @@ class MainActivity : ComponentActivity() {
                                     searchForDevice = { item ->
                                         pageSelected = 2
                                         searchForDevice(item)
-                                    }
+                                    },
+                                    padding = innerPadding
                                 )
                             }
                             1 -> {
@@ -149,7 +150,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun searchForDevice(item: BleDeviceWrapper) {
-        object : CountDownTimer(30000, 550) {
+        object : CountDownTimer(30000, 250) {
 
             override fun onTick(millisUntilFinished: Long) {
                 scanChosenDevice(item.scanResult)
