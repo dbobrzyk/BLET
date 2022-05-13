@@ -47,7 +47,7 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 @Composable
 fun BleListScreen(
     context: Context,
-    state: State<BleViewState>,
+    state: BleViewState,
     scanning: () -> Boolean,
     startScan: () -> Unit,
     changeViewState: (BleViewState) -> Unit,
@@ -61,7 +61,7 @@ fun BleListScreen(
             .fillMaxSize()
     ) {
         SwipeRefresh(
-            state = rememberSwipeRefreshState(state.value.dataLoading && scanning()),
+            state = rememberSwipeRefreshState(state.dataLoading && scanning()),
             onRefresh = { startScan() },
         ) {
             LazyColumn(
@@ -81,19 +81,19 @@ fun BleListScreen(
                 item {
                     Column {
 
-                        Text("Localization \nLatitude: ${state.value.location?.latitude}\nLongitude: ${state.value.location?.longitude}")
+                        Text("Localization \nLatitude: ${state.location?.latitude}\nLongitude: ${state.location?.longitude}")
 
                         Text(
-                            state.value.viewHeader,
+                            state.viewHeader,
                             style = TextStyle(fontWeight = FontWeight.Bold),
                             textAlign = TextAlign.Center,
                             modifier = Modifier
-                                .padding(top = 48.dp, bottom = 16.dp)
+                                .padding(top = 16.dp, bottom = 16.dp)
                         )
                     }
                 }
-                items(state.value.listOfBleDevices.size) { index ->
-                    val item = state.value.listOfBleDevices[index]
+                items(state.listOfBleDevices.size) { index ->
+                    val item = state.listOfBleDevices[index]
                     val isMyMiBand = false
                     Column(
                         modifier = Modifier
@@ -108,7 +108,7 @@ fun BleListScreen(
                             )
                             .fillMaxWidth()
                             .clickable {
-                                val newList = state.value.listOfBleDevices.map {
+                                val newList = state.listOfBleDevices.map {
                                     if (it == item) {
                                         item.copy(isExpanded = !item.isExpanded)
                                     } else {
@@ -116,7 +116,7 @@ fun BleListScreen(
                                     }
                                 }
                                 changeViewState(
-                                    state.value.copy(
+                                    state.copy(
                                         listOfBleDevices = newList
                                     )
                                 )
@@ -179,10 +179,10 @@ fun BleListScreen(
                                         color = Color.White,
                                         text = "Add marker",
                                         modifier = Modifier
-                                            .padding(8.dp)
+                                            .padding(end = 8.dp, top = 8.dp)
                                             .clip(RoundedCornerShape(4.dp))
                                             .background(darkBlue)
-                                            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
                                             .clickable {
                                                 addMarker(item)
                                             }
@@ -191,10 +191,10 @@ fun BleListScreen(
                                         color = Color.White,
                                         text = "Connect",
                                         modifier = Modifier
-                                            .padding(8.dp)
+                                            .padding(end = 8.dp, top = 8.dp)
                                             .clip(RoundedCornerShape(4.dp))
-                                            .background(darkBlue)
-                                            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                                            .background(Color.Gray)
+                                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
                                             .clickable {
                                                 connectToDevice(item)
                                             }
@@ -203,10 +203,10 @@ fun BleListScreen(
                                         color = Color.White,
                                         text = "Search",
                                         modifier = Modifier
-                                            .padding(8.dp)
+                                            .padding(end = 8.dp, top = 8.dp)
                                             .clip(RoundedCornerShape(4.dp))
                                             .background(darkBlue)
-                                            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
                                             .clickable {
                                                 searchForDevice(item)
                                             }
