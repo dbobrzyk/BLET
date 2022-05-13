@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.blet.R
 import com.example.blet.ui.theme.darkBlue
@@ -61,7 +60,7 @@ fun BottomBar(pageSelected: Int, selectPage: (Int) -> Unit) {
             BottomButton(
                 1,
                 R.drawable.ic_map,
-               "Map",
+                "Map",
                 pageSelected
             )
         }
@@ -76,7 +75,7 @@ fun BottomBar(pageSelected: Int, selectPage: (Int) -> Unit) {
         ) {
             BottomButton(
                 2,
-               R.drawable.ic_search,
+                R.drawable.ic_search,
                 "Search device",
                 pageSelected
             )
@@ -92,7 +91,7 @@ fun BottomButton(
     pageSelected: Int
 ) {
 
-    drawableId?.let{
+    drawableId?.let {
         Icon(
             painter = painterResource(
                 id = drawableId

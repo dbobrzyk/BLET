@@ -22,7 +22,6 @@ import androidx.compose.material.Divider
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -174,7 +173,7 @@ fun BleListScreen(
                                 Text(text = "Signal strenght: ${item.scanResult.rssi} dBm [rssi]")
                                 Text(text = "Signal power: ${item.scanResult.txPower} dBm [txpower]")
                                 Text(text = "Connectable: ${item.scanResult.isConnectable}")
-                                Row{
+                                Row {
                                     Text(
                                         color = Color.White,
                                         text = "Add marker",

@@ -11,7 +11,6 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.CountDownTimer
 import android.os.Handler
-import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import com.example.blet.ble.MyBleManager
