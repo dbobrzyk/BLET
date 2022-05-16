@@ -22,8 +22,10 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,13 +42,18 @@ import com.example.blet.ui.theme.lightBlue
 import com.example.blet.ui.theme.lightestBlue
 import com.example.blet.util.DistanceUtil
 
+
 @SuppressLint("MissingPermission")
 @Composable
 fun SearchDeviceScreen(
     state: BleViewState,
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues,
+    vibrate: () -> Unit
 ) {
     val device = state.chosenDevice
+    var lastRsii by remember {
+        mutableStateOf(-90)
+    }
     Surface {
 
         Column(
@@ -81,7 +88,10 @@ fun SearchDeviceScreen(
                     statValue = (device.rssi + 165),
                     modifier = Modifier.padding(16.dp)
                 )
-
+                if (device.rssi > lastRsii) {
+                    lastRsii = device.rssi
+                    vibrate()
+                }
                 device.rssi.let {
                     val distance = DistanceUtil.getDistanceFromDevice(it, device.txPower)
                     if (distance < 1.0)

@@ -8,11 +8,17 @@ object DistanceUtil {
                 in 0 downTo -22 -> {
                     0.0
                 }
-                in -23 downTo -40 -> {
+                in -23 downTo -32 -> {
                     0.1
                 }
-                in -41 downTo -50 -> {
+                in -33 downTo -40 -> {
+                    0.2
+                }
+                in -41 downTo -45 -> {
                     0.3
+                }
+                in -46 downTo -50 -> {
+                    0.5
                 }
                 in -51 downTo -60 -> {
                     0.75

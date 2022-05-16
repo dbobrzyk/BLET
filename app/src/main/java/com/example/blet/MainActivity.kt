@@ -8,6 +8,9 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -89,7 +92,7 @@ class MainActivity : ComponentActivity() {
                                 MapScreen(state = state)
                             }
                             2 -> {
-                                SearchDeviceScreen(state = state, innerPadding)
+                                SearchDeviceScreen(state = state, innerPadding) { vibrate(250L) }
                             }
                         }
                     }
@@ -99,6 +102,27 @@ class MainActivity : ComponentActivity() {
 
         startScan()
         getGpsLocation()
+    }
+
+    private fun vibrate(ms: Long) {
+        val appContext = (this@MainActivity).applicationContext
+        val baseContext = (this@MainActivity).baseContext
+        Log.d("VIBRATION", "VIBRATE for $ms")
+
+        (appContext.getSystemService(VIBRATOR_SERVICE) as? Vibrator)?.let {
+            Log.d("VIBRATION", "appContext vibrator not null")
+            it.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
+        } ?: run {
+            Log.d("VIBRATION", "appContext vibrator is null")
+        }
+
+        (baseContext.getSystemService(VIBRATOR_SERVICE) as? Vibrator)?.let {
+            Log.d("VIBRATION", "base vibrator not null")
+            it.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
+        } ?: run {
+            Log.d("VIBRATION", "base vibrator is null")
+        }
+
     }
 
     private fun getGpsLocation() {

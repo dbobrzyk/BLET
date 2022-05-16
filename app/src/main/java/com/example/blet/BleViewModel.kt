@@ -26,7 +26,7 @@ class BleViewModel @Inject constructor() : ViewModel() {
 
     var scanning = false
     private val handler = Handler()
-    private val SCAN_PERIOD: Long = 3000
+    private val SCAN_PERIOD: Long = 10000
 
     private val _viewState: MutableStateFlow<BleViewState> = MutableStateFlow(BleViewState())
     val viewState: StateFlow<BleViewState> = _viewState.asStateFlow()
