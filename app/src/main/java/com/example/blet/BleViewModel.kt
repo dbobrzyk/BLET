@@ -6,6 +6,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.hardware.SensorEvent
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -144,6 +145,17 @@ class BleViewModel @Inject constructor() : ViewModel() {
         return !scanning && bluetoothAdapter?.isEnabled == true
     }
 
+    fun addSensorData(event: SensorEvent) {
+        _viewState.update {
+            it.copy(
+                sensorData = SensorData(
+                    upDown = event.values[1],
+                    sides = event.values[0]
+                )
+            )
+        }
+    }
+
     private val chosenScanCallback: ScanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -209,7 +221,13 @@ data class BleViewState(
     val listOfBleDevices: List<BleDeviceWrapper> = listOf(),
     val location: Location? = null,
     val listOfMarkers: List<Marker> = listOf(),
-    val chosenDevice: ScanResult? = null
+    val chosenDevice: ScanResult? = null,
+    val sensorData: SensorData? = null
+)
+
+data class SensorData(
+    val upDown: Float,
+    val sides: Float
 )
 
 data class Marker(

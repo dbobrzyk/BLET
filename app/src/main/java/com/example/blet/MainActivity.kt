@@ -5,6 +5,10 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
@@ -33,7 +37,7 @@ import com.example.blet.ui.theme.BLETTheme
 import com.example.blet.util.DistanceUtil
 
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), SensorEventListener {
 
     private val bleManager: MyBleManager by lazy { MyBleManager(this@MainActivity) }
     private val bluetoothAdapter by lazy { (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter }
@@ -102,6 +106,25 @@ class MainActivity : ComponentActivity() {
 
         startScan()
         getGpsLocation()
+        setupSensorListener()
+    }
+
+    override fun onDestroy() {
+        sensorManager.unregisterListener(this)
+        super.onDestroy()
+    }
+
+    private lateinit var sensorManager: SensorManager
+    private fun setupSensorListener() {
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also { sensor ->
+            sensorManager.registerListener(
+                this,
+                sensor,
+                SensorManager.SENSOR_DELAY_FASTEST,
+                SensorManager.SENSOR_DELAY_FASTEST
+            )
+        }
     }
 
     private fun vibrate(ms: Long) {
@@ -122,7 +145,6 @@ class MainActivity : ComponentActivity() {
         } ?: run {
             Log.d("VIBRATION", "base vibrator is null")
         }
-
     }
 
     private fun getGpsLocation() {
@@ -182,6 +204,16 @@ class MainActivity : ComponentActivity() {
             )
         }
         const val REQUEST_CODE = 175
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
+            viewModel.addSensorData(event)
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        return
     }
 }
 

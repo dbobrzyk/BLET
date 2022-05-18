@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.blet.BleViewState
 import com.example.blet.R
+import com.example.blet.ui.theme.darkBlue
 import com.example.blet.ui.theme.lightBlue
 import com.example.blet.ui.theme.lightestBlue
 import com.example.blet.util.DistanceUtil
@@ -99,6 +101,37 @@ fun SearchDeviceScreen(
                     else
                         Text("Distance: ~${distance}m")
                 }
+                state.sensorData?.let { sensor ->
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer(
+                                rotationX = -sensor.upDown * 3f,
+                                rotationY = sensor.sides * 3f,
+                                rotationZ = -sensor.sides,
+                                translationX = sensor.sides * -10,
+                                translationY = sensor.upDown * 10
+                            )
+                            .padding(top = 64.dp)
+                            .size(200.dp, 250.dp)
+
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_phone),
+                            contentDescription = null,
+                            modifier = Modifier.size(200.dp, 250.dp)
+                        )
+                    }
+
+                }
+
+                state.sensorData?.let { sensor ->
+                    Text(
+                        textAlign = TextAlign.Center,
+                        text = "upDown ${sensor.upDown.toInt()} \n sides ${sensor.sides.toInt()}", modifier = Modifier.padding(top = 32.dp),
+                    )
+                }
+
+
             } else {
                 Text(
                     text = "Choose device to search from the BLE list first!",
